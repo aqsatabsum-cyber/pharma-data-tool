@@ -15,7 +15,8 @@ def log_error(filename, reason):
     guid=get_guid()
     timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"[ERROR LOG] Recording error for file: {filename}")
-    log_file =os.path.join(LOG_DIR,"error_log.csv")
+    date_today = datetime.now().strftime("%Y%m%d")
+    log_file = os.path.join(LOG_DIR, f"error_log_{date_today}.csv")
     file_exists=os.path.isfile(log_file)
 
     with open(log_file,"a",newline="") as f:
