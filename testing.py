@@ -2,6 +2,10 @@ import csv
 import os
 import random
 
+print("=" * 50)
+print("  Pharma Data Tool — Test File Generator")
+print("=" * 50)
+
 output_dir = "test_ftp_data"
 os.makedirs(output_dir,exist_ok=True)
 
