@@ -2,9 +2,9 @@ import csv
 import os
 import random
 
-print("=" * 50)
-print("  Pharma Data Tool — Test File Generator")
-print("=" * 50)
+print("="*50)
+print("  Pharma Data Tool— Test File Generator")
+print("="*50)
 
 output_dir = "test_ftp_data"
 os.makedirs(output_dir,exist_ok=True)
@@ -90,4 +90,4 @@ generate_duplicate_batch_ids()
 generate_invalid_readings()
 generate_missing_columns()
 
-print("\nAll test files generated in:", output_dir)
+print(f"\nDone. 7 test files generated and saved to: {output_dir}")
