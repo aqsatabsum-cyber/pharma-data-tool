@@ -1,0 +1,99 @@
+name: Pharma Data Tool CI/CD Pipeline
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+jobs:
+
+  # ── STAGE 1: TEST ──────────────
+  test:
+    name: Run All Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Generate test CSV files
+        run: |
+          python testing.py
+
+      - name: Run all unit tests
+        run: |
+          python -m unittest discover -s tests -v
+
+  # ── STAGE 2: BUILD ──────────
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/adp-assignment:${{ github.sha }} .
+          docker tag ${{ secrets.DOCKER_USERNAME }}/adp-assignment:${{ github.sha }} \
+                     ${{ secrets.DOCKER_USERNAME }}/adp-assignment:latest
+
+      - name: Save Docker image as artifact
+        run: |
+          docker save ${{ secrets.DOCKER_USERNAME }}/adp-assignment:latest \
+          | gzip > adp-assignment.tar.gz
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: docker-image
+          path: adp-assignment.tar.gz
+
+  # ── STAGE 3: DEPLOY ──────────────
+  deploy:
+    name: Deploy to Docker Hub
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push to Docker Hub
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/adp-assignment:latest .
+          docker push ${{ secrets.DOCKER_USERNAME }}/adp-assignment:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/adp-assignment:${{ github.sha }}
+
+      - name: Confirm deployment
+        run: |
+          echo "Deployment successful"
+          echo "Image: ${{ secrets.DOCKER_USERNAME }}/adp-assignment:latest"
+          echo "Commit SHA: ${{ github.sha }}"
